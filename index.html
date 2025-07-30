@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher App - School Management</title>
+    <link rel="stylesheet" href="teacher.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h1>Teacher App</h1>
+                </div>
+                <div class="header-right">
+                    <div class="teacher-info">
+                        <span id="teacher-name">Teacher</span>
+                        <small id="teacher-subject">Subject</small>
+                    </div>
+                    <button class="btn-logout" onclick="logout()" style="margin-left: 10px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem;">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="app-nav">
+            <button class="nav-btn active" data-tab="attendance">
+                <i class="fas fa-calendar-check"></i>
+                <span>Attendance</span>
+            </button>
+            <button class="nav-btn" data-tab="fees">
+                <i class="fas fa-money-bill-wave"></i>
+                <span>Fees</span>
+            </button>
+            <button class="nav-btn" data-tab="students">
+                <i class="fas fa-users"></i>
+                <span>Students</span>
+            </button>
+            <button class="nav-btn" data-tab="progress">
+                <i class="fas fa-chart-line"></i>
+                <span>Progress</span>
+            </button>
+            <button class="nav-btn" data-tab="profile">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="app-main">
+            <!-- Attendance Tab -->
+            <div id="attendance" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Attendance Management</h2>
+                    <div class="date-selector">
+                        <input type="date" id="attendance-date" onchange="loadAttendanceData()">
+                    </div>
+                </div>
+
+
+
+                <div class="attendance-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Present</span>
+                        <span class="summary-value" id="present-count">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Absent</span>
+                        <span class="summary-value" id="absent-count">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total</span>
+                        <span class="summary-value" id="total-count">0</span>
+                    </div>
+                </div>
+
+                <div class="students-list" id="students-list">
+                    <!-- Students will be loaded here -->
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="markAllPresent()">
+                        <i class="fas fa-check-circle"></i>
+                        Mark All Present
+                    </button>
+                    <button class="btn-primary" onclick="submitAttendance()">
+                        <i class="fas fa-save"></i>
+                        Submit Attendance
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fees Tab -->
+            <div id="fees" class="tab-content">
+                <div class="tab-header">
+                    <h2>Fees Management</h2>
+                    <button class="btn-primary" onclick="openAddFeeModal()">
+                        <i class="fas fa-plus"></i>
+                        Add Fee
+                    </button>
+                </div>
+
+                <div class="fees-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Fees</span>
+                        <span class="summary-value" id="total-fees">₹0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Collected</span>
+                        <span class="summary-value" id="collected-fees">₹0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Pending</span>
+                        <span class="summary-value" id="pending-fees">₹0</span>
+                    </div>
+                </div>
+
+                <div class="fees-list" id="fees-list">
+                    <!-- Fees will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Students Tab -->
+            <div id="students" class="tab-content">
+                <div class="tab-header">
+                    <h2>My Students</h2>
+                    <div class="search-box">
+                        <input type="text" id="student-search" placeholder="Search students...">
+                    </div>
+                </div>
+
+                <div class="students-grid" id="students-grid">
+                    <!-- Students will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Progress Tab -->
+            <div id="progress" class="tab-content">
+                <div class="tab-header">
+                    <h2>Student Progress Management</h2>
+                    <button class="btn-primary" onclick="openAddProgressModal()">
+                        <i class="fas fa-plus"></i>
+                        Add Progress
+                    </button>
+                </div>
+
+                <div class="progress-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Total Records</span>
+                        <span class="summary-value" id="total-progress">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">This Month</span>
+                        <span class="summary-value" id="month-progress">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Average Score</span>
+                        <span class="summary-value" id="avg-score">0%</span>
+                    </div>
+                </div>
+
+                <div class="progress-list" id="progress-list">
+                    <!-- Progress records will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="profile" class="tab-content">
+                <div class="tab-header">
+                    <h2>Teacher Profile</h2>
+                </div>
+
+                <div class="profile-card">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="profile-name">Teacher Name</h3>
+                        <p id="profile-subject">Subject</p>
+                        <p id="profile-phone">Phone</p>
+                        <p id="profile-email">Email</p>
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 id="profile-students">0</h4>
+                            <p>Students</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h4 id="profile-attendance">0%</h4>
+                            <p>Attendance Rate</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-actions">
+                    <button class="btn-primary" onclick="editProfile()">
+                        <i class="fas fa-edit"></i>
+                        Edit Profile
+                    </button>
+                    <button class="btn-secondary" onclick="logout()">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Fee Record</h3>
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay active">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Teacher Login</h3>
+            </div>
+            <div class="modal-body">
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="login-username" required placeholder="Enter your username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="login-password" required placeholder="Enter your password">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/demo-data.js"></script>
+    <script src="teacher.js"></script>
+</body>
+</html> 
